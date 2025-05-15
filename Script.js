@@ -129,7 +129,7 @@ function gameLoop() {
     localStorage.setItem("finalScore", finalScore);
   
     // Redirect to game over page
-    window.location.href = "GameOver.html";
+    window.location.href = "../GameOver.html";
   
     return; // stop the game loop or any further code
   }
