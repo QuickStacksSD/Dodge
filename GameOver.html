@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Over</title>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+            color: #ff3e3e;
+            text-shadow: 0 0 10px #ff3e3e;
+        }
+
+        p {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        button {
+            font-size: 1.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            background: #ff3e3e;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 10px #ff3e3e;
+            transition: background 0.3s ease;
+            margin-top: 2rem;
+            width: 180px;
+        }
+
+        button:hover {
+            background: #ff0000;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        #topScoresContainer {
+            margin-top: 3rem;
+            width: 100%;
+            max-width: 400px;
+            background: #222;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 15px #ff3e3e88;
+        }
+
+        #topScoresContainer h2 {
+            text-align: center;
+            color: #ff3e3e;
+            margin-bottom: 15px;
+            text-shadow: 0 0 8px #ff3e3e;
+        }
+
+        #topScoresList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        #topScoresList li {
+            font-size: 1.5rem;
+            padding: 10px 15px;
+            border-bottom: 1px solid #ff3e3e44;
+            display: flex;
+            justify-content: space-between;
+            color: #eee;
+            transition: background 0.3s ease;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #1a1a1a;
+        }
+
+        #topScoresList li:hover {
+            background: #ff3e3e22;
+        }
+
+        #topScoresList li span.score {
+            color: #ff3e3e;
+            font-weight: bold;
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+
+<body>
+    <h1>Game Over</h1>
+    <p>Your Score: <span id="score">0</span></p>
+
+    <div id="topScoresContainer">
+        <h2>Top 3 Scores</h2>
+        <ol id="topScoresList">
+            <li>Loading...</li>
+        </ol>
+    </div>
+
+    <button id="restartBtn">Play Again</button>
+
+    <script>
+        // Your Firebase config (replace with your own)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDP8QcvOGY_NPGa4MHIMbg5tt5z7dslllY",
+            authDomain: "quickstacks-4ab15.firebaseapp.com",
+            databaseURL: "https://quickstacks-4ab15-default-rtdb.firebaseio.com",
+            projectId: "quickstacks-4ab15",
+            storageBucket: "quickstacks-4ab15.firebasestorage.app",
+            messagingSenderId: "754822704954",
+            appId: "1:754822704954:web:8f6df06ffd907227e5ea03",
+            measurementId: "G-7MEQS4XKFL"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const finalScore = parseInt(localStorage.getItem('finalScore')) || 0;
+        const currentUser = localStorage.getItem('username');
+
+        document.getElementById('score').textContent = finalScore;
+
+        if (!currentUser) {
+            alert("No logged-in user found. Redirecting to login.");
+            window.location.href = "login.html"; // Change if your login page is named differently
+        } else {
+            const userTopScoreRef = database.ref('users/' + currentUser + '/topScore');
+
+            userTopScoreRef.once('value')
+                .then(snapshot => {
+                    const savedTopScore = snapshot.val() || 0;
+                    if (finalScore > savedTopScore) {
+                        return userTopScoreRef.set(finalScore);
+                    }
+                })
+                .then(() => {
+                    console.log('Top score updated if higher.');
+                    loadTopScores();
+                })
+                .catch(error => {
+                    console.error('Error updating score:', error);
+                    loadTopScores();
+                });
+        }
+
+        function loadTopScores() {
+            const topScoresList = document.getElementById('topScoresList');
+            topScoresList.innerHTML = '<li>Loading...</li>';
+
+            database.ref('users')
+                .orderByChild('topScore')
+                .limitToLast(3)
+                .once('value')
+                .then(snapshot => {
+                    const usersArray = [];
+                    snapshot.forEach(childSnapshot => {
+                        const val = childSnapshot.val();
+                        usersArray.push({
+                            username: childSnapshot.key,
+                            topScore: val.topScore || 0
+                        });
+                    });
+
+                    // Sort descending
+                    usersArray.sort((a, b) => b.topScore - a.topScore);
+
+                    if (usersArray.length === 0) {
+                        topScoresList.innerHTML = '<li>No scores yet</li>';
+                        return;
+                    }
+
+                    topScoresList.innerHTML = '';
+                    usersArray.forEach(user => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `${user.username} <span class="score">${user.topScore}</span>`;
+                        topScoresList.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    topScoresList.innerHTML = '<li>Error loading scores</li>';
+                    console.error(err);
+                });
+        }
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            window.location.href = 'Base.html';  // Your main game page
+        });
+    </script>
+</body>
+
+</html>

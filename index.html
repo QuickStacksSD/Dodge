@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign Up</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #222;
+            color: #eee;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            color: #ff3e3e;
+            text-shadow: 0 0 10px #ff3e3e;
+        }
+
+        form {
+            background: #333;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px #ff3e3e66;
+            width: 320px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: box-shadow 0.3s ease;
+            background: #444;
+            color: #eee;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            box-shadow: 0 0 10px #ff3e3e;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            background: #ff3e3e;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 15px #ff3e3eaa;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #ff0000;
+            box-shadow: 0 0 20px #ff0000cc;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: 600;
+            min-height: 1.3rem;
+            text-align: center;
+        }
+
+        p {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #bbb;
+        }
+
+        p a {
+            color: #ff3e3e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        p a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Create Your Account</h2>
+    <form id="signupForm" autocomplete="off" spellcheck="false">
+        <input type="text" name="username" placeholder="Username" required minlength="3" maxlength="20" />
+        <input type="password" name="password" placeholder="Password" required minlength="6" />
+        <button type="submit">Sign Up</button>
+    </form>
+    <p id="message"></p>
+    <p>Already have an account? <a href="login.html">Login here</a></p>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDP8QcvOGY_NPGa4MHIMbg5tt5z7dslllY",
+            authDomain: "quickstacks-4ab15.firebaseapp.com",
+            databaseURL: "https://quickstacks-4ab15-default-rtdb.firebaseio.com",
+            projectId: "quickstacks-4ab15",
+            storageBucket: "quickstacks-4ab15.firebasestorage.app",
+            messagingSenderId: "754822704954",
+            appId: "1:754822704954:web:8f6df06ffd907227e5ea03",
+            measurementId: "G-7MEQS4XKFL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        async function signup(username, password) {
+            const userRef = ref(db, 'users/' + username);
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                throw new Error("Username already exists.");
+            }
+            await set(userRef, {
+                password: password,
+                topScore: 0
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const signupForm = document.getElementById('signupForm');
+            const message = document.getElementById('message');
+
+            signupForm.onsubmit = async (e) => {
+                e.preventDefault();
+                message.textContent = "";
+                message.style.color = "inherit";
+                const username = signupForm.username.value.trim();
+                const password = signupForm.password.value;
+                try {
+                    await signup(username, password);
+                    message.style.color = 'lightgreen';
+                    message.textContent = "Signup successful! You can now login.";
+                    signupForm.reset();
+                } catch (err) {
+                    message.style.color = 'tomato';
+                    message.textContent = err.message;
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>
